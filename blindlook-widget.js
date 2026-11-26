@@ -538,7 +538,7 @@
 })(window.__BLW_LOCALES = window.__BLW_LOCALES || {});
 
 /*!
- * BlindLook Erişilebilirlik Aracı v1.0.0
+ * BlindLook Erişilebilirlik Aracı v1.0.1
  * Açık kaynak dağıtım · sürüm notları: SURUM-NOTLARI.md
  *
  * Kurulum (sitenin </body> etiketinden hemen önce):
@@ -561,7 +561,7 @@
 (() => {
   'use strict';
   if (window.BlindlookWidget) return;
-  const VERSION = '1.0.0';
+  const VERSION = '1.0.1';
   const VERSION_SHORT = VERSION.replace(/\.0$/, ''); // 1.0.0 → 1.0, 1.1.0 → 1.1
 
   const d = document;
@@ -1705,9 +1705,14 @@
     if (!('speechSynthesis' in window) || !text) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang || html.lang || bcp(state.lang);
-    const pre = u.lang.slice(0, 2).toLowerCase();
-    const v = speechSynthesis.getVoices().find((x) => x.lang && x.lang.toLowerCase().startsWith(pre));
+    // Widget dili, sayfanın HTML dilinden önceliklidir (örn. data-lang="tr").
+    u.lang = lang || bcp(state.lang);
+    const availableVoices = speechSynthesis.getVoices();
+    const target = u.lang.toLowerCase();
+    const pre = target.split('-')[0];
+    // Tam yerel dil eşleşmesini (tr-TR) tercih et; yoksa aynı dil ailesini kullan.
+    const v = availableVoices.find((x) => x.lang && x.lang.toLowerCase() === target)
+      || availableVoices.find((x) => x.lang && x.lang.toLowerCase().split('-')[0] === pre);
     if (v) u.voice = v;
     u.onend = clearSpeaking;
     speechSynthesis.speak(u);
