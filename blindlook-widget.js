@@ -538,7 +538,7 @@
 })(window.__BLW_LOCALES = window.__BLW_LOCALES || {});
 
 /*!
- * BlindLook Erişilebilirlik Aracı v1.0.1
+ * BlindLook Erişilebilirlik Aracı v1.0.3
  * Açık kaynak dağıtım · sürüm notları: SURUM-NOTLARI.md
  *
  * Kurulum (sitenin </body> etiketinden hemen önce):
@@ -561,7 +561,7 @@
 (() => {
   'use strict';
   if (window.BlindlookWidget) return;
-  const VERSION = '1.0.1';
+  const VERSION = '1.0.4';
   const VERSION_SHORT = VERSION.replace(/\.0$/, ''); // 1.0.0 → 1.0, 1.1.0 → 1.1
 
   const d = document;
@@ -646,7 +646,7 @@
       on: 'açık', off: 'kapalı', settings: 'Ayarlar', glossaryT: 'Sözlük', wiki: 'Vikipedi\'de ara', searching: 'Aranıyor…',
       noResult: 'Sonuç bulunamadı.', readMore: 'Devamını oku',
       headings: 'Başlıklar', landmarks: 'Sayfa Bölgeleri', links: 'Sayfadaki Bağlantılar', empty: 'Bu sayfada bulunamadı.',
-      noAlt: 'Açıklama yok', closeReader: 'Okuma modunu kapat', srOn: 'Ekran okuma açık. Okutmak istediğiniz öğeye tıklayın.',
+      noAlt: 'Açıklama yok', closeReader: 'Okuma modunu kapat', srOn: 'Ekran okuma açık. Okutmak istediğiniz öğenin üzerine fare imlecini getirin veya klavyeyle odaklanın. Dokunmatik ekranda öğeye dokunun.',
       size: 'Panel boyutu', sizes: ['Normal', 'XL', 'Mini'],
       hideTitle: 'Aracı Geçici Olarak Gizle', hideQ: 'Aracı ne süreyle gizlemek istersiniz?', hideOk: 'Onayla ve Gizle',
       hideOpts: [['Sekme kapanana kadar', 'Yeni oturumda tekrar görünür'], ['Bugünlük gizle', 'Yarın tekrar görünmeye başlar'], ['Bu hafta için gizle', '7 gün sonra tekrar aktif olur'], ['Bu ay için gizle', '30 gün sonra tekrar aktif olur'], ['Bir daha gösterme', 'Çerezler silinene kadar gizli kalır']],
@@ -689,7 +689,7 @@
         keyboardFocus: ['Klavye Odağı', 'Klavye ile gezinirken odaklanılan öğeyi belirgin çerçeveyle gösterir.'],
         readingMode: ['Okuma Modu', 'Sayfanın ana metnini sade ve rahat okunur bir görünümde açar.'],
         imageDesc: ['Resim Betimleme', 'Görsellerin alternatif metinlerini görselin üzerinde gösterir; eksik olanları işaretler.'],
-        screenReader: ['Ekran Okuma', 'Tıkladığınız veya klavyeyle odaklandığınız içeriği sesli okur.'],
+        screenReader: ['Ekran Okuma', 'Fareyle üzerine geldiğiniz, tıkladığınız veya klavyeyle odaklandığınız içeriği sesli okur.'],
       },
       glossary: [
         ['Erişilebilirlik', 'Bir web sitesinin engelli bireyler dahil herkes tarafından eşit şekilde kullanılabilmesi.'],
@@ -716,7 +716,7 @@
       on: 'on', off: 'off', settings: 'Settings', glossaryT: 'Glossary', wiki: 'Search Wikipedia', searching: 'Searching…',
       noResult: 'No results found.', readMore: 'Read more',
       headings: 'Headings', landmarks: 'Page Regions', links: 'Links on this page', empty: 'None found on this page.',
-      noAlt: 'No description', closeReader: 'Close reading mode', srOn: 'Screen reading on. Click any element to hear it.',
+      noAlt: 'No description', closeReader: 'Close reading mode', srOn: 'Screen reading on. Hover over an element or focus it with the keyboard to hear it. On touch screens, tap an element.',
       size: 'Panel size', sizes: ['Normal', 'XL', 'Mini'],
       hideTitle: 'Hide the Tool Temporarily', hideQ: 'How long would you like to hide the tool?', hideOk: 'Confirm and Hide',
       hideOpts: [['Until the tab is closed', 'Visible again in a new session'], ['Hide for today', 'Visible again tomorrow'], ['Hide for this week', 'Active again after 7 days'], ['Hide for this month', 'Active again after 30 days'], ['Don\'t show again', 'Stays hidden until cookies are cleared']],
@@ -759,7 +759,7 @@
         keyboardFocus: ['Keyboard Focus', 'Shows a strong outline on the focused element.'],
         readingMode: ['Reading Mode', 'Opens the main text in a clean, easy-to-read view.'],
         imageDesc: ['Image Descriptions', 'Shows image alt texts over images and flags missing ones.'],
-        screenReader: ['Screen Reading', 'Reads aloud whatever you click or focus with the keyboard.'],
+        screenReader: ['Screen Reading', 'Reads aloud content you hover over, click, or focus with the keyboard.'],
       },
       glossary: [
         ['Accessibility', 'Making a website usable by everyone, including people with disabilities.'],
@@ -1634,7 +1634,7 @@
     syncMedia();
     updateLabels();
     if (f.readingMode) openReader(); else closeReader();
-    if (!f.screenReader) clearSpeaking();
+    if (!f.screenReader) { clearSpeaking(); clearTimeout(hoverReadTimer); hoverReadTimer = 0; hoveredReadElement = null; }
 
     html.toggleAttribute('data-blindlook-active', Object.values(f).some(Boolean));
     updateUI();
@@ -1700,9 +1700,10 @@
   const scheduleLabels = () => { if (state.f.imageDesc && !labelRaf) labelRaf = requestAnimationFrame(updateLabels); };
 
   /* --- Ekran okuma --- */
-  let speakingEl = null;
+  let speakingEl = null, speechGeneration = 0;
   function speak(text, lang) {
     if (!('speechSynthesis' in window) || !text) return;
+    const generation = ++speechGeneration;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     // Widget dili, sayfanın HTML dilinden önceliklidir (örn. data-lang="tr").
@@ -1714,7 +1715,7 @@
     const v = availableVoices.find((x) => x.lang && x.lang.toLowerCase() === target)
       || availableVoices.find((x) => x.lang && x.lang.toLowerCase().split('-')[0] === pre);
     if (v) u.voice = v;
-    u.onend = clearSpeaking;
+    u.onend = u.onerror = () => { if (generation === speechGeneration) clearSpeaking(); };
     speechSynthesis.speak(u);
   }
   function clearSpeaking() {
@@ -1724,7 +1725,7 @@
   function readElement(target) {
     if (!state.f.screenReader || !target || target === host || host.contains(target)) return;
     const t = L();
-    const el = target.closest('a,button,[role="button"],[role="link"],h1,h2,h3,h4,h5,h6,img,input,select,textarea,label,li,p,td,th,figcaption,blockquote,dt,dd') || target;
+    const el = readableHoverElement(target) || target;
     if (el === d.body || el === html) return;
     let prefix = '', text = '';
     const tag = el.tagName;
@@ -1736,13 +1737,54 @@
     else if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag)) {
       const lab = (el.labels && el.labels[0] && el.labels[0].innerText) || el.getAttribute('aria-label') || el.placeholder || '';
       text = `${lab} ${el.type === 'password' ? '' : el.value || ''}`;
-    } else text = el.getAttribute('aria-label') || el.innerText || el.textContent;
+    } else {
+      const ids = (el.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean);
+      const labelled = ids.map(id => d.getElementById(id)?.textContent || '').join(' ').trim();
+      text = labelled || el.getAttribute('aria-label') || el.innerText || el.textContent;
+      if (!clean(text)) text = [...el.querySelectorAll('img[alt]')].map(img => img.alt).join(' ');
+    }
     text = clean(text, 600);
     if (!text) return;
     clearSpeaking();
     speakingEl = el;
     el.classList.add('blw-speaking');
     speak(prefix + text);
+  }
+
+  /* --- Fareyle üzerine gelince okuma (Körlük / Ekran Okuma) --- */
+  let hoverReadTimer = 0;
+  let hoveredReadElement = null;
+  const READABLE_SELECTOR = 'a,button,[role="button"],[role="link"],[role="heading"],h1,h2,h3,h4,h5,h6,img,input,select,textarea,label,li,p,td,th,figcaption,blockquote,dt,dd,[aria-label],[aria-labelledby]';
+  function readableHoverElement(target) {
+    if (!target || !target.closest || target === host || host.contains(target)) return null;
+    if (target.closest('[aria-hidden="true"],script,style,noscript')) return null;
+    const semantic = target.closest(READABLE_SELECTOR);
+    if (semantic) return semantic;
+    // Webflow Text Block çoğu zaman div veya span olarak yayınlanır.
+    for (let el = target; el && el !== d.body && el !== html; el = el.parentElement) {
+      const directText = [...el.childNodes].some(n => n.nodeType === 3 && clean(n.textContent));
+      if (directText || (el.matches('div,span,strong,em,b,i,small') && !el.querySelector('div,p,h1,h2,h3,h4,h5,h6,a,button,section,article,li') && clean(el.innerText))) return el;
+    }
+    return null;
+  }
+  function setSpeechHover(el) {
+    if (el === hoveredReadElement) return;
+    clearTimeout(hoverReadTimer);
+    hoverReadTimer = 0;
+    hoveredReadElement = el;
+    if (!el) return;
+    hoverReadTimer = setTimeout(() => {
+      hoverReadTimer = 0;
+      if (state.f.screenReader && hoveredReadElement === el && el.isConnected) readElement(el);
+    }, 250);
+  }
+  function onSpeechHover(e) {
+    if (!state.f.screenReader || (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
+    setSpeechHover(readableHoverElement(e.target));
+  }
+  function onSpeechHoverOut(e) {
+    if (!state.f.screenReader) return;
+    setSpeechHover(readableHoverElement(e.relatedTarget));
   }
 
   /* --- Okuma modu --- */
@@ -1803,8 +1845,14 @@
       onMagMove(e);
     }, { passive: true });
     d.addEventListener('mouseover', onMagOver, { passive: true });
-    d.addEventListener('click', (e) => readElement(e.target), true);
-    d.addEventListener('focusin', (e) => { if (e.target !== host) readElement(e.target); });
+    // Capture: site etkileşimleri olayın yayılmasını durdursa bile hover algılanır.
+    d.addEventListener('pointerover', onSpeechHover, { passive: true, capture: true });
+    d.addEventListener('pointermove', onSpeechHover, { passive: true, capture: true });
+    d.addEventListener('mouseover', onSpeechHover, { passive: true, capture: true });
+    d.addEventListener('mousemove', onSpeechHover, { passive: true, capture: true });
+    d.addEventListener('mouseout', onSpeechHoverOut, { passive: true, capture: true });
+    d.addEventListener('click', (e) => { clearTimeout(hoverReadTimer); readElement(e.target); }, true);
+    d.addEventListener('focusin', (e) => { if (e.target !== host) { clearTimeout(hoverReadTimer); readElement(e.target); } });
     d.addEventListener('play', (e) => { if (state.f.mute && e.target.muted !== undefined) e.target.muted = true; }, true);
     addEventListener('scroll', () => { scheduleLabels(); hideInfo(); }, { passive: true, capture: true });
     addEventListener('resize', scheduleLabels, { passive: true });
