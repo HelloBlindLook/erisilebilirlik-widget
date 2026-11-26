@@ -561,7 +561,7 @@
 (() => {
   'use strict';
   if (window.BlindlookWidget) return;
-  const VERSION = '1.0.5';
+  const VERSION = '1.0.6';
   const VERSION_SHORT = VERSION.replace(/\.0$/, ''); // 1.0.0 → 1.0, 1.1.0 → 1.1
 
   const d = document;
@@ -646,7 +646,7 @@
       on: 'açık', off: 'kapalı', settings: 'Ayarlar', glossaryT: 'Sözlük', wiki: 'Vikipedi\'de ara', searching: 'Aranıyor…',
       noResult: 'Sonuç bulunamadı.', readMore: 'Devamını oku',
       headings: 'Başlıklar', landmarks: 'Sayfa Bölgeleri', links: 'Sayfadaki Bağlantılar', empty: 'Bu sayfada bulunamadı.',
-      noAlt: 'Açıklama yok', closeReader: 'Okuma modunu kapat', srOn: 'Ekran okuma açık. Okutmak istediğiniz öğenin üzerine fare imlecini getirin veya klavyeyle odaklanın. Dokunmatik ekranda öğeye dokunun.',
+      noAlt: 'Açıklama yok', closeReader: 'Okuma modunu kapat', srOn: 'Ekran okuma açık. Okutmak istediğiniz öğenin üzerine fare imlecini getirin. Paneli kapatıp aşağı veya sağ okla sonraki, yukarı veya sol okla önceki öğeye geçebilirsiniz. Bağlantı ve düğmeleri Enter ile açabilirsiniz. Tab ile normal klavye gezintisine devam edin. Dokunmatik ekranda öğeye dokunun.',
       size: 'Panel boyutu', sizes: ['Normal', 'XL', 'Mini'],
       hideTitle: 'Aracı Geçici Olarak Gizle', hideQ: 'Aracı ne süreyle gizlemek istersiniz?', hideOk: 'Onayla ve Gizle',
       hideOpts: [['Sekme kapanana kadar', 'Yeni oturumda tekrar görünür'], ['Bugünlük gizle', 'Yarın tekrar görünmeye başlar'], ['Bu hafta için gizle', '7 gün sonra tekrar aktif olur'], ['Bu ay için gizle', '30 gün sonra tekrar aktif olur'], ['Bir daha gösterme', 'Çerezler silinene kadar gizli kalır']],
@@ -689,7 +689,7 @@
         keyboardFocus: ['Klavye Odağı', 'Klavye ile gezinirken odaklanılan öğeyi belirgin çerçeveyle gösterir.'],
         readingMode: ['Okuma Modu', 'Sayfanın ana metnini sade ve rahat okunur bir görünümde açar.'],
         imageDesc: ['Resim Betimleme', 'Görsellerin alternatif metinlerini görselin üzerinde gösterir; eksik olanları işaretler.'],
-        screenReader: ['Ekran Okuma', 'Fareyle üzerine geldiğiniz, tıkladığınız veya klavyeyle odaklandığınız içeriği sesli okur.'],
+        screenReader: ['Ekran Okuma', 'Fareyle üzerine geldiğiniz veya klavyeyle odaklandığınız içeriği sesli okur. Panel kapalıyken ok tuşlarıyla öğeler arasında ilerleyin.'],
       },
       glossary: [
         ['Erişilebilirlik', 'Bir web sitesinin engelli bireyler dahil herkes tarafından eşit şekilde kullanılabilmesi.'],
@@ -716,7 +716,7 @@
       on: 'on', off: 'off', settings: 'Settings', glossaryT: 'Glossary', wiki: 'Search Wikipedia', searching: 'Searching…',
       noResult: 'No results found.', readMore: 'Read more',
       headings: 'Headings', landmarks: 'Page Regions', links: 'Links on this page', empty: 'None found on this page.',
-      noAlt: 'No description', closeReader: 'Close reading mode', srOn: 'Screen reading on. Hover over an element or focus it with the keyboard to hear it. On touch screens, tap an element.',
+      noAlt: 'No description', closeReader: 'Close reading mode', srOn: 'Screen reading on. Hover over an element to hear it. Close the panel and use Down or Right for the next item, Up or Left for the previous item. Press Enter to activate links and buttons. Use Tab for normal keyboard navigation. On touch screens, tap an element.',
       size: 'Panel size', sizes: ['Normal', 'XL', 'Mini'],
       hideTitle: 'Hide the Tool Temporarily', hideQ: 'How long would you like to hide the tool?', hideOk: 'Confirm and Hide',
       hideOpts: [['Until the tab is closed', 'Visible again in a new session'], ['Hide for today', 'Visible again tomorrow'], ['Hide for this week', 'Active again after 7 days'], ['Hide for this month', 'Active again after 30 days'], ['Don\'t show again', 'Stays hidden until cookies are cleared']],
@@ -759,7 +759,7 @@
         keyboardFocus: ['Keyboard Focus', 'Shows a strong outline on the focused element.'],
         readingMode: ['Reading Mode', 'Opens the main text in a clean, easy-to-read view.'],
         imageDesc: ['Image Descriptions', 'Shows image alt texts over images and flags missing ones.'],
-        screenReader: ['Screen Reading', 'Reads aloud content you hover over, click, or focus with the keyboard.'],
+        screenReader: ['Screen Reading', 'Reads content you hover over or focus with the keyboard. Close the panel to move between items with arrow keys.'],
       },
       glossary: [
         ['Accessibility', 'Making a website usable by everyone, including people with disabilities.'],
@@ -1532,6 +1532,7 @@
     const f = state.f, c = [], B = 'body';
     c.push('.blw-flash{outline:4px solid #1D20B4 !important;outline-offset:4px !important}');
     c.push('.blw-speaking{outline:3px solid #1D20B4 !important;outline-offset:3px !important;background-color:rgba(29,32,180,.08) !important}');
+    c.push('.blw-arrow-current{outline:3px solid #1D20B4 !important;outline-offset:3px !important}');
     if (f.dyslexia) {
       ensureFont(f.dyslexia);
       const fam = f.dyslexia === 1 ? '"OpenDyslexic","Open-Dyslexic","Comic Sans MS"' : '"Atkinson Hyperlegible"';
@@ -1641,7 +1642,7 @@
     syncMedia();
     updateLabels();
     if (f.readingMode) openReader(); else closeReader();
-    if (!f.screenReader) { clearSpeaking(); clearTimeout(hoverReadTimer); hoverReadTimer = 0; hoveredReadElement = null; }
+    if (!f.screenReader) { clearSpeaking(); clearTimeout(hoverReadTimer); hoverReadTimer = 0; hoveredReadElement = null; clearArrowCursor(); }
 
     html.toggleAttribute('data-blindlook-active', Object.values(f).some(Boolean));
     updateUI();
@@ -1729,11 +1730,12 @@
     if (speakingEl) speakingEl.classList.remove('blw-speaking');
     speakingEl = null;
   }
-  function readElement(target) {
+  function readElement(target, exact = false) {
     if (!state.f.screenReader || !target || target === host || host.contains(target)) return;
     const t = L();
-    const el = readableHoverElement(target) || target;
-    if (el === d.body || el === html) return;
+    const el = exact ? target : (readableHoverElement(target) || target);
+    if (el === d.body || el === html || el.closest('[aria-hidden="true"],[hidden],[inert]')) return;
+    if (el.tagName === 'IMG' && (el.getAttribute('alt') === '' || /^(presentation|none)$/.test(el.getAttribute('role') || ''))) return;
     let prefix = '', text = '';
     const tag = el.tagName;
     if (tag === 'A' || el.getAttribute('role') === 'link') prefix = t.role.link + ': ';
@@ -1786,12 +1788,109 @@
     }, 250);
   }
   function onSpeechHover(e) {
-    if (!state.f.screenReader || (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
+    if (performance.now() < ignoreHoverUntil || !state.f.screenReader || (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen')) return;
     setSpeechHover(readableHoverElement(e.target));
   }
   function onSpeechHoverOut(e) {
-    if (!state.f.screenReader) return;
+    if (performance.now() < ignoreHoverUntil || !state.f.screenReader) return;
     setSpeechHover(readableHoverElement(e.relatedTarget));
+  }
+
+  /* --- Ok tuşlarıyla sesli sayfa gezintisi --- */
+  let arrowCursor = null, arrowFocusInProgress = false, ignoreHoverUntil = 0;
+  const ARROW_CONTROL = 'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="link"],[role="checkbox"],[role="radio"],[role="switch"],[tabindex]:not([tabindex="-1"])';
+  const ARROW_SEMANTIC = ARROW_CONTROL + ',h1,h2,h3,h4,h5,h6,[role="heading"],p,li,dt,dd,blockquote,figcaption,td,th,img,[role="img"]';
+  const ARROW_TEXT = 'div,span,strong,em,b,i,small,pre,label';
+  const NATIVE_ARROWS = 'input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[role="combobox"],[role="listbox"],[role="option"],[role="slider"],[role="spinbutton"],[role="tablist"],[role="tab"],[role="menu"],[role="menubar"],[role="menuitem"],[role="radiogroup"],[role="radio"],[role="tree"],[role="grid"],[role="toolbar"],[role="application"],video[controls],audio[controls]';
+  const tempArrowTabindex = new WeakSet();
+  function clearArrowCursor() {
+    if (arrowCursor) {
+      arrowCursor.classList.remove('blw-arrow-current');
+      if (tempArrowTabindex.has(arrowCursor)) {
+        if (arrowCursor.getAttribute('tabindex') === '-1') arrowCursor.removeAttribute('tabindex');
+        tempArrowTabindex.delete(arrowCursor);
+      }
+    }
+    arrowCursor = null;
+  }
+  function arrowVisible(el) {
+    if (!el.isConnected || el.closest('[hidden],[inert],[aria-hidden="true"],script,style,noscript,template') || !el.getClientRects().length) return false;
+    if (el.closest('details:not([open])') && !el.closest('summary')) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return false;
+    if (r.right <= 0 || r.left >= innerWidth) return false;
+    for (let p = el; p && p !== d.body; p = p.parentElement) {
+      const css = getComputedStyle(p);
+      if (css.display === 'none' || css.visibility !== 'visible' || css.contentVisibility === 'hidden' || Number(css.opacity) === 0) return false;
+      if (p !== el && /(hidden|clip|auto|scroll)/.test(css.overflowX)) {
+        const pr = p.getBoundingClientRect();
+        if (r.right <= pr.left || r.left >= pr.right) return false;
+      }
+    }
+    return true;
+  }
+  function hasArrowText(el) {
+    return Boolean(clean(el.innerText || el.getAttribute('aria-label') || '') || clean(el.getAttribute('aria-labelledby')));
+  }
+  function arrowItems() {
+    return [...d.body.querySelectorAll(ARROW_SEMANTIC + ',' + ARROW_TEXT)].filter(el => {
+      if (el.matches('img') && (el.getAttribute('alt') === '' || /^(none|presentation)$/.test(el.getAttribute('role') || ''))) return false;
+      if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
+      const control = el.matches(ARROW_CONTROL);
+      const parentControl = el.parentElement?.closest(ARROW_CONTROL);
+      if (parentControl) return false; // Link/düğme içindeki metin veya logo bir kez okunur.
+      if (!control) {
+        const parentText = el.parentElement?.closest('h1,h2,h3,h4,h5,h6,[role="heading"],p,li,dt,dd,blockquote,figcaption,td,th');
+        if (parentText && !el.matches('img,[role="img"]') && !el.matches(ARROW_SEMANTIC)) return false;
+        if (!el.matches(ARROW_SEMANTIC)) {
+          if (parentText || !hasArrowText(el)) return false;
+          const directText = [...el.childNodes].some(n => n.nodeType === 3 && clean(n.textContent));
+          if (!directText && el.querySelector(ARROW_SEMANTIC + ',div,p,section,article')) return false;
+          // En yakın metin bloğu inline biçimlendirmeyi de içerir.
+          const wrapper = el.parentElement?.closest('div,span,pre,label');
+          if (wrapper && !wrapper.querySelector(ARROW_SEMANTIC + ',div,p,section,article') && hasArrowText(wrapper) && !el.matches('div,pre,label')) return false;
+        } else if (!el.matches('img,[role="img"]')) {
+          if (!hasArrowText(el)) return false;
+          if (el.querySelector('h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote') && ![...el.childNodes].some(n => n.nodeType === 3 && clean(n.textContent))) return false;
+        }
+      }
+      return arrowVisible(el);
+    });
+  }
+  function onArrowRead(e) {
+    if (!state.f.screenReader || state.open || !reader.hidden || e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+    const forward = e.key === 'ArrowDown' || e.key === 'ArrowRight';
+    if (!forward && e.key !== 'ArrowUp' && e.key !== 'ArrowLeft') return;
+    const target = e.composedPath()[0];
+    if (target?.isContentEditable || target?.closest?.(NATIVE_ARROWS) || (d.activeElement !== host && d.activeElement?.closest?.(NATIVE_ARROWS))) return;
+    const items = arrowItems();
+    if (!items.length) return;
+    const focus = d.activeElement;
+    const from = arrowCursor || (focus && focus !== d.body && focus !== html && focus !== host ? focus : null);
+    let idx = items.indexOf(from);
+    if (idx === -1 && from) idx = items.indexOf(from.closest?.(ARROW_SEMANTIC));
+    if (idx === -1 && from) {
+      // Odaklanan fakat listeye alınmayan öğenin belge sırasındaki komşusuna geç.
+      const next = items.findIndex(el => !!(from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING));
+      idx = forward ? (next < 0 ? items.length - 1 : next - 1) : (next < 0 ? items.length : next);
+    } else if (idx === -1) idx = forward ? -1 : items.length;
+    e.preventDefault();
+    const newIndex = idx + (forward ? 1 : -1);
+    if (newIndex < 0 || newIndex >= items.length) return; // Başta/sonda döngü yok.
+    const el = items[newIndex];
+    clearTimeout(hoverReadTimer); hoverReadTimer = 0; hoveredReadElement = null;
+    ignoreHoverUntil = performance.now() + 500;
+    clearArrowCursor();
+    arrowCursor = el;
+    if (!el.matches('a[href],button,input,select,textarea,summary,[tabindex],[contenteditable="true"]')) {
+      el.setAttribute('tabindex', '-1');
+      tempArrowTabindex.add(el);
+    }
+    el.classList.add('blw-arrow-current');
+    arrowFocusInProgress = true;
+    try { el.focus({ preventScroll: true }); } finally { arrowFocusInProgress = false; }
+    el.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+    readElement(el, true);
   }
 
   /* --- Okuma modu --- */
@@ -1845,6 +1944,7 @@
         if (state.view) { const v = state.view; state.view = null; renderBody(); const c = v === 'lang' ? ui.querySelector('[data-act="langView"]') : ui.querySelector(`[data-card="f:${v}"] .cbtn`); if (c) c.focus(); return; }
         if (state.open) close();
       }
+      onArrowRead(e);
     });
     d.addEventListener('mousemove', (e) => {
       mouseY = e.clientY;
@@ -1859,7 +1959,11 @@
     d.addEventListener('mousemove', onSpeechHover, { passive: true, capture: true });
     d.addEventListener('mouseout', onSpeechHoverOut, { passive: true, capture: true });
     d.addEventListener('click', (e) => { clearTimeout(hoverReadTimer); readElement(e.target); }, true);
-    d.addEventListener('focusin', (e) => { if (e.target !== host) { clearTimeout(hoverReadTimer); readElement(e.target); } });
+    d.addEventListener('focusin', (e) => {
+      if (arrowFocusInProgress) return;
+      if (arrowCursor && e.target !== arrowCursor) clearArrowCursor();
+      if (e.target !== host) { clearTimeout(hoverReadTimer); readElement(e.target); }
+    });
     d.addEventListener('play', (e) => { if (state.f.mute && e.target.muted !== undefined) e.target.muted = true; }, true);
     addEventListener('scroll', () => { scheduleLabels(); hideInfo(); }, { passive: true, capture: true });
     addEventListener('resize', scheduleLabels, { passive: true });
