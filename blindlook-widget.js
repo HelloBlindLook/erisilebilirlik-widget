@@ -561,7 +561,7 @@
 (() => {
   'use strict';
   if (window.BlindlookWidget) return;
-  const VERSION = '1.0.4';
+  const VERSION = '1.0.5';
   const VERSION_SHORT = VERSION.replace(/\.0$/, ''); // 1.0.0 → 1.0, 1.1.0 → 1.1
 
   const d = document;
@@ -654,7 +654,7 @@
       role: { link: 'Bağlantı', button: 'Düğme', heading: 'Başlık', img: 'Görsel' },
       colorNames: ['Siyah', 'Mavi', 'Turuncu', 'Lacivert', 'Kırmızı', 'Mor', 'Beyaz', 'Yeşil', 'Turkuaz'],
       p: {
-        blind: ['Körlük', 'Ekran okuma, belirgin klavye odağı ve resim betimlemeyi açar; animasyonları durdurur.'],
+        blind: ['Körlük', 'Ekran okuma ve belirgin klavye odağını açar; animasyonları durdurur. Görsellerin alternatif metinlerini sesli okur.'],
         lowVision: ['Görme Bozuklukları', 'Metni büyütür, kontrastı artırır, imleci büyütür; bağlantı ve başlıkları vurgular.'],
         motor: ['Motor Beceri Bozukluğu', 'Büyük imleç, belirgin klavye odağı ve daha ferah satırlar sağlar; animasyonları durdurur.'],
         dyslexia: ['Disleksi', 'Disleksi dostu yazı tipi, geniş harf/satır aralığı ve okuma kılavuzu kullanır.'],
@@ -724,7 +724,7 @@
       role: { link: 'Link', button: 'Button', heading: 'Heading', img: 'Image' },
       colorNames: ['Black', 'Blue', 'Orange', 'Navy', 'Red', 'Purple', 'White', 'Green', 'Cyan'],
       p: {
-        blind: ['Blindness', 'Turns on screen reading, strong keyboard focus and image descriptions; stops animations.'],
+        blind: ['Blindness', 'Turns on screen reading and strong keyboard focus; stops animations. Reads image alt texts aloud.'],
         lowVision: ['Visual Impairments', 'Enlarges text, increases contrast and cursor size; highlights links and headings.'],
         motor: ['Motor Impairments', 'Big cursor, strong keyboard focus and roomier lines; stops animations.'],
         dyslexia: ['Dyslexia', 'Dyslexia-friendly font, wider letter/line spacing and a reading guide.'],
@@ -917,7 +917,7 @@
   const FMAP = Object.fromEntries(FEATURES.map((f) => [f.id, f]));
 
   const PROFILES = [
-    { id: 'blind', icon: 'eyeOffP', set: { screenReader: 1, keyboardFocus: 1, imageDesc: 1, stopAnim: 1 } },
+    { id: 'blind', icon: 'eyeOffP', set: { screenReader: 1, keyboardFocus: 1, stopAnim: 1 } },
     { id: 'lowVision', icon: 'glasses', set: { fontSize: 2, contrast: 3, bigCursor: 1, links: 1, headings: 1 } },
     { id: 'motor', icon: 'wheel', set: { bigCursor: 1, keyboardFocus: 1, stopAnim: 1, lineHeight: 1 } },
     { id: 'dyslexia', icon: 'puzzle', set: { dyslexia: 1, textSpacing: 1, lineHeight: 1, readingGuide: 1 } },
@@ -1002,7 +1002,14 @@
   }
   let hiddenTrigger = isHiddenStored();
   const L = () => buildLocale(state.lang);
-  const save = () => ls.set(KEY, { f: state.f, p: state.p, c: state.c, col: state.col, lang: state.lang, size: state.size });
+  const save = () => ls.set(KEY, { f: state.f, p: state.p, c: state.c, col: state.col, lang: state.lang, size: state.size, blindImageDescDefault: 2 });
+  // Eski Körlük profili resim betimleme kutularını otomatik açıyordu.
+  // Yalnızca eski profili kullananların bu ayarını bir kez kapat; diğer tercihleri koru.
+  // Kullanıcı daha sonra Resim Betimleme'yi bağımsız olarak açabilir.
+  if (saved.blindImageDescDefault !== 2 && state.p.includes('blind') && state.f.imageDesc) {
+    state.f.imageDesc = 0;
+    save();
+  }
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = (s) => String(s).toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0131/g, 'i');
